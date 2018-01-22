@@ -1,0 +1,6 @@
+exports.create_user = function(req, res) {
+  var user = new User(req.body);
+  user.save(function(err) {
+    res.send('ok');
+  });
+};

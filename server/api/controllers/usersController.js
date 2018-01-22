@@ -5,16 +5,15 @@ const express = require('express'),
 
 exports.get_all_users = function(req, res) {
   User.find(function (err, users) {
-    if (err) {
-      res.send(err);
-    }
+    if (err) return res.json(err);
     res.json(users);
   });
 };
 
 exports.get_user = function(req, res) {
+  if (!req.params._id) return res.json({error:'no id'});
   User.findById(req.params._id, function(err, user) {
-    if (err) res.send(err);
+    if (err) return res.json(err);
     res.json(user);
   });
 };

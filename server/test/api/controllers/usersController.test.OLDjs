@@ -1,0 +1,93 @@
+const User = require('../../../api/models/user');
+const UsersController = require('../../../api/controllers/usersController');
+const sinon = require('sinon');
+const chai = require('chai');
+const expect = chai.expect;
+const mongoose = require('mongoose');
+
+describe('usersController', function() {
+
+  beforeEach(function () {
+    this.res = {};
+    this.req = {};
+    this.res.json = sinon.spy();
+  });
+
+  describe("get_all_users", function () {
+    it("should return json with all users", function () {
+      sinon.stub(User, 'find');
+      User.find.yields(null, [{email: 'test@test.com'}]);
+      UsersController.get_all_users(this.req, this.res);
+
+      expect(this.res.json.calledOnce).to.equal(true);
+      expect(this.res.json.getCall(0).args).to.eql([[{email: 'test@test.com'}]]);
+      User.find.restore();
+    });
+
+    it("sends error in res.send", function(){
+      sinon.stub(User, 'find');
+      User.find.yields({error: 'nothing found'}, null);
+      UsersController.get_all_users(this.req, this.res);
+
+      expect(this.res.json.calledOnce).to.equal(true);
+      expect(this.res.json.getCall(0).args).to.eql([{error:'nothing found'}]);
+      User.find.restore();
+    });
+  });
+
+  describe("get_user", function () {
+    it("should return user for request with _id", function () {
+      sinon.stub(User, 'findById');
+      this.req.params = {
+        _id: '1337'
+      }
+      User.findById.yields(null, {email: 'test@test.pl'});
+      UsersController.get_user(this.req, this.res);
+
+      expect(this.res.json.calledOnce).to.equal(true);
+      expect(this.res.json.getCall(0).args).to.eql([{email: 'test@test.pl'}]);
+      User.findById.restore();
+    });
+
+    it("sends error on request without _id", function(){
+      sinon.stub(User, 'findById');
+      this.req.params = {};
+      User.findById.yields(null, {email: 'test@test.pl'});
+      UsersController.get_user(this.req, this.res);
+
+      expect(this.res.json.calledOnce).to.equal(true);
+      expect(this.res.json.getCall(0).args).to.eql([{error: 'no id'}])
+      User.findById.restore();
+    });
+
+    it("sends json on database error", function(){
+      sinon.stub(User, 'findById');
+      this.req.params = {_id: '1337'};
+      User.findById.yields({error: 'database error'}, {});
+      UsersController.get_user(this.req, this.res);
+
+      expect(this.res.json.calledOnce).to.equal(true);
+      expect(this.res.json.getCall(0).args).to.eql([{error: 'database error'}]);
+    });
+  });
+
+  describe("create_user", function(){
+    it("saves user", function(){
+      global.User = class User{
+        constructor(args){
+          this.args = args;
+        }
+        save(){
+
+        }
+      }
+      sinon.stub(User.prototype, 'save');
+      var constructor = sinon.spy(global, 'User');
+      UsersController.create_user(this.req, this.res);
+      expect(constructor.calledOnce).to.equal(true);
+      //console.log(userStub.getCall(0).args);
+      //expect(this.res.json.calledOnce).to.equal(true);
+    });
+  });
+
+});
